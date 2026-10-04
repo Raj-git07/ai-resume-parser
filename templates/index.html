@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeAI ⚡ — AI-Powered Resume Matcher</title>
+  <meta name="description" content="Upload resumes and a job description to get instant AI-powered match scores and skill analysis." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0b0f1a;
+      --surface:  #111827;
+      --surface2: #1a2234;
+      --border:   #1e293b;
+      --primary:  #7c3aed;
+      --secondary:#06b6d4;
+      --accent:   #a78bfa;
+      --text:     #e2e8f0;
+      --muted:    #94a3b8;
+      --green:    #22c55e;
+      --amber:    #f59e0b;
+      --red:      #ef4444;
+      --radius:   14px;
+      --glow:     0 0 24px rgba(124,58,237,.35);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background grid ──────────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: -1;
+      background-image:
+        linear-gradient(rgba(124,58,237,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ── Nav ──────────────────────────────────────────────────────────── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      background: rgba(11,15,26,.8);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo {
+      font-size: 1.4rem; font-weight: 800; letter-spacing: -.5px;
+      background: linear-gradient(135deg, var(--accent), var(--secondary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo span { -webkit-text-fill-color: var(--text); }
+    .nav-badge {
+      font-size: .7rem; font-weight: 600; padding: 3px 10px;
+      border-radius: 20px; border: 1px solid var(--border);
+      color: var(--muted); letter-spacing: .5px;
+    }
+
+    /* ── Hero ─────────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center; padding: 64px 24px 40px;
+    }
+    .hero-tag {
+      display: inline-block; font-size: .75rem; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 6px 16px; border-radius: 20px;
+      background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.3);
+      color: var(--accent); margin-bottom: 20px;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800; line-height: 1.15; letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    h1 .grad {
+      background: linear-gradient(135deg, #a78bfa 0%, #06b6d4 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { color: var(--muted); font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+
+    /* ── Main card ────────────────────────────────────────────────────── */
+    .main-card {
+      max-width: 1100px; margin: 32px auto; padding: 0 24px;
+    }
+
+    .input-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .input-grid { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: border-color .2s;
+    }
+    .panel:focus-within { border-color: var(--primary); box-shadow: var(--glow); }
+    .panel-label {
+      font-size: .8rem; font-weight: 600; letter-spacing: .8px;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-label svg { opacity: .8; }
+
+    textarea#jd {
+      width: 100%; height: 260px; resize: vertical;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px; color: var(--text);
+      font-family: inherit; font-size: .9rem; line-height: 1.6;
+      outline: none; transition: border-color .2s;
+    }
+    textarea#jd:focus { border-color: var(--primary); }
+    textarea#jd::placeholder { color: var(--muted); }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      min-height: 260px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .drop-zone.drag-over {
+      border-color: var(--primary); background: rgba(124,58,237,.07);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .drop-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, rgba(124,58,237,.2), rgba(6,182,212,.2));
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    }
+    .drop-zone .dz-title { font-weight: 600; color: var(--text); }
+    .drop-zone .dz-sub { font-size: .82rem; color: var(--muted); }
+
+    #file-list {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+      max-height: 90px; overflow-y: auto;
+    }
+    .file-chip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 20px;
+      background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.3);
+      font-size: .78rem; color: var(--accent); max-width: 160px; overflow: hidden;
+    }
+    .file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Analyze button */
+    #analyze-btn {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; width: 100%;
+      padding: 16px; border: none; border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700;
+      cursor: pointer; letter-spacing: .3px;
+      transition: opacity .2s, transform .15s, box-shadow .2s;
+      box-shadow: 0 4px 20px rgba(124,58,237,.4);
+    }
+    #analyze-btn:hover { opacity: .92; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,58,237,.5); }
+    #analyze-btn:active { transform: translateY(0); }
+    #analyze-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* Spinner */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Results ──────────────────────────────────────────────────────── */
+    #results-section { display: none; margin-top: 40px; }
+    .section-title {
+      font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title .pill {
+      font-size: .72rem; padding: 3px 10px; border-radius: 20px;
+      background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3);
+      color: var(--green);
+    }
+
+    /* JD summary */
+    .jd-summary {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+    }
+    .jd-summary h3 { font-size: .85rem; font-weight: 600; color: var(--accent); margin-bottom: 12px; }
+    .jd-summary .role-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; }
+    .skills-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .skill-badge {
+      font-size: .75rem; padding: 4px 12px; border-radius: 20px;
+      background: rgba(124,58,237,.12); border: 1px solid rgba(124,58,237,.25);
+      color: var(--accent);
+    }
+
+    /* Result cards */
+    .result-cards { display: grid; gap: 16px; }
+    .result-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px;
+      display: flex; align-items: flex-start; gap: 20px;
+      animation: fadeUp .4s ease both;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .result-card:hover { border-color: var(--primary); box-shadow: var(--glow); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .result-card:nth-child(2) { animation-delay: .06s; }
+    .result-card:nth-child(3) { animation-delay: .12s; }
+    .result-card:nth-child(4) { animation-delay: .18s; }
+
+    /* Circular gauge */
+    .gauge-wrap { flex-shrink: 0; position: relative; width: 84px; height: 84px; }
+    .gauge-wrap svg { transform: rotate(-90deg); }
+    .gauge-bg { fill: none; stroke: var(--surface2); stroke-width: 7; }
+    .gauge-fg { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+    .gauge-label {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .gauge-pct { font-size: 1.1rem; font-weight: 800; }
+    .gauge-sub { font-size: .6rem; color: var(--muted); margin-top: 1px; }
+
+    .card-body { flex: 1; min-width: 0; }
+    .card-filename {
+      font-size: .95rem; font-weight: 700; margin-bottom: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-meta { font-size: .78rem; color: var(--muted); margin-bottom: 12px; }
+    .matched-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .matched-skill {
+      font-size: .72rem; padding: 3px 10px; border-radius: 20px;
+      background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25);
+      color: var(--green);
+    }
+    .no-match { font-size: .8rem; color: var(--muted); font-style: italic; }
+
+    /* Rank badge */
+    .rank { flex-shrink: 0; }
+    .rank-badge {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 800;
+    }
+    .rank-1 { background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #000; }
+    .rank-2 { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+    .rank-3 { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+    .rank-n { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+
+    /* Error toast */
+    #error-box {
+      display: none; margin-top: 16px; padding: 14px 18px;
+      border-radius: var(--radius); background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3); color: #fca5a5;
+      font-size: .88rem;
+    }
+
+    footer {
+      text-align: center; padding: 40px 24px 32px;
+      font-size: .78rem; color: var(--muted);
+      border-top: 1px solid var(--border); margin-top: 60px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ───────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="logo">Resume<span>AI</span> ⚡</div>
+  <span class="nav-badge">POWERED BY GROQ</span>
+</nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-tag">AI Resume Parser</div>
+  <h1>Match Resumes to Any<br/><span class="grad">Job Description</span></h1>
+  <p>Upload PDF/DOCX resumes and paste a JD — get instant AI-powered skill match scores.</p>
+</section>
+
+<!-- ── Main ──────────────────────────────────────────────────────────── -->
+<main class="main-card">
+  <div class="input-grid">
+
+    <!-- JD panel -->
+    <div class="panel">
+      <div class="panel-label">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Job Description
+      </div>
+      <textarea id="jd" placeholder="Paste the full job description here…
+
+Include role, responsibilities, required skills, etc."></textarea>
+    </div>
+
+    <!-- Upload panel -->
+    <div class="panel">
+      <div class="panel-label">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Resumes
+      </div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept=".pdf,.docx" multiple />
+        <div class="drop-icon">
+          <svg width="22" height="22" fill="none" stroke="#a78bfa" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        </div>
+        <div class="dz-title">Drag & drop resumes here</div>
+        <div class="dz-sub">PDF or DOCX · Multiple files supported</div>
+        <div id="file-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Analyze button -->
+  <button id="analyze-btn" onclick="analyze()">
+    <div class="spinner" id="spinner"></div>
+    <svg id="btn-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    Analyze Resumes
+  </button>
+
+  <div id="error-box"></div>
+
+  <!-- Results -->
+  <section id="results-section">
+    <div class="jd-summary" id="jd-summary"></div>
+
+    <div class="section-title">
+      Ranked Candidates
+      <span class="pill" id="count-pill"></span>
+    </div>
+    <div class="result-cards" id="result-cards"></div>
+  </section>
+</main>
+
+<footer>ResumeAI &mdash; AI Resume Parser &copy; 2024 &nbsp;·&nbsp; Powered by Groq LLaMA</footer>
+
+<script>
+  // ── File input handling ─────────────────────────────────────────────
+  const fileInput = document.getElementById('file-input');
+  const dropZone  = document.getElementById('drop-zone');
+  const fileList  = document.getElementById('file-list');
+  let selectedFiles = [];
+
+  fileInput.addEventListener('change', () => {
+    selectedFiles = Array.from(fileInput.files);
+    renderFileChips();
+  });
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    selectedFiles = Array.from(e.dataTransfer.files);
+    renderFileChips();
+  });
+
+  function renderFileChips() {
+    fileList.innerHTML = selectedFiles.map(f => `
+      <div class="file-chip">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>${f.name}</span>
+      </div>`).join('');
+  }
+
+  // ── Score colour ────────────────────────────────────────────────────
+  function scoreColor(pct) {
+    if (pct >= 70) return 'var(--green)';
+    if (pct >= 40) return 'var(--amber)';
+    return 'var(--red)';
+  }
+
+  function rankClass(i) {
+    return i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-n';
+  }
+
+  // ── Gauge SVG ───────────────────────────────────────────────────────
+  function makeGauge(score) {
+    const R = 34, C = 2 * Math.PI * R;
+    const pct = Math.round(score * 100);
+    const offset = C - (pct / 100) * C;
+    const color = scoreColor(pct);
+    return `
+      <div class="gauge-wrap">
+        <svg width="84" height="84" viewBox="0 0 84 84">
+          <circle class="gauge-bg" cx="42" cy="42" r="${R}"/>
+          <circle class="gauge-fg" cx="42" cy="42" r="${R}"
+            stroke="${color}" stroke-dasharray="${C}" stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="gauge-label">
+          <span class="gauge-pct" style="color:${color}">${pct}%</span>
+          <span class="gauge-sub">match</span>
+        </div>
+      </div>`;
+  }
+
+  // ── Analyze ─────────────────────────────────────────────────────────
+  async function analyze() {
+    const jd   = document.getElementById('jd').value.trim();
+    const btn  = document.getElementById('analyze-btn');
+    const err  = document.getElementById('error-box');
+    const spin = document.getElementById('spinner');
+    const icon = document.getElementById('btn-icon');
+
+    err.style.display = 'none';
+
+    if (!jd) { showError('Please paste a job description.'); return; }
+    if (!selectedFiles.length) { showError('Please upload at least one resume.'); return; }
+
+    // Loading state
+    btn.disabled = true;
+    spin.style.display = 'block';
+    icon.style.display = 'none';
+    btn.childNodes[btn.childNodes.length - 1].textContent = ' Analyzing…';
+
+    const form = new FormData();
+    form.append('jd_text', jd);
+    selectedFiles.forEach(f => form.append('resumes', f));
+
+    try {
+      const res = await fetch('/analyze', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Server error');
+      renderResults(data);
+    } catch(e) {
+      showError('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      spin.style.display = 'none';
+      icon.style.display = '';
+      btn.childNodes[btn.childNodes.length - 1].textContent = ' Analyze Resumes';
+    }
+  }
+
+  function showError(msg) {
+    const err = document.getElementById('error-box');
+    err.textContent = msg;
+    err.style.display = 'block';
+  }
+
+  // ── Render results ──────────────────────────────────────────────────
+  function renderResults({ job, results }) {
+    // JD summary
+    const jdEl = document.getElementById('jd-summary');
+    jdEl.innerHTML = `
+      <h3>PARSED JOB DESCRIPTION</h3>
+      <div class="role-title">${job.role || 'Role'}</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:10px;">Required Skills (${job.required_skills.length})</div>
+      <div class="skills-row">
+        ${job.required_skills.map(s => `<span class="skill-badge">${s}</span>`).join('')}
+      </div>`;
+
+    // Cards
+    const cards = document.getElementById('result-cards');
+    document.getElementById('count-pill').textContent = results.length + ' resumes';
+
+    cards.innerHTML = results.map((r, i) => {
+      const matched = r.matched_skills || [];
+      const badgeClass = rankClass(i);
+      return `
+        <div class="result-card">
+          ${makeGauge(r.score)}
+          <div class="card-body">
+            <div class="card-filename">${r.resume_name}</div>
+            <div class="card-meta">${matched.length} / ${job.required_skills.length} required skills matched</div>
+            <div class="matched-skills">
+              ${matched.length
+                ? matched.map(s => `<span class="matched-skill">${s}</span>`).join('')
+                : '<span class="no-match">No required skills matched</span>'}
+            </div>
+          </div>
+          <div class="rank"><span class="rank-badge ${badgeClass}">#${i+1}</span></div>
+        </div>`;
+    }).join('');
+
+    const section = document.getElementById('results-section');
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+</body>
+</html>
