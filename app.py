@@ -32,6 +32,16 @@ from matcher import match_resume
 from models import JobDescription, Resume
 from resume_parser import read_resume
 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+TEMPLATES_DIR = BASE_DIR / "templates"
+
+# Ensure required directories exist (e.g. on fresh Render deploy)
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title="AI Resume Parser",
@@ -39,8 +49,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # ---------------------------------------------------------------------------
